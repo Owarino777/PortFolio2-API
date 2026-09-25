@@ -1,0 +1,106 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Portfolio API de Cheikh Malik",
+    "version": "1.0.0",
+    "description": "API publique des projets et du profil, avec un formulaire de contact. Les images et les pages des projets sont hébergées par le frontend Astro."
+  },
+  "servers": [{ "url": "/" }],
+  "paths": {
+    "/api/projects": {
+      "get": {
+        "summary": "Lister les projets",
+        "operationId": "listProjects",
+        "responses": {
+          "200": {
+            "description": "Projets triés par date décroissante",
+            "content": { "application/json": { "schema": { "type": "object", "required": ["projects"], "properties": { "projects": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } } } } } }
+          }
+        }
+      }
+    },
+    "/api/projects/{slug}": {
+      "get": {
+        "summary": "Lire un projet par son slug",
+        "description": "Encoder le slug comme segment d'URL. Par exemple, nested/duvet-genius devient nested%2Fduvet-genius.",
+        "operationId": "getProject",
+        "parameters": [{ "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Projet trouvé", "content": { "application/json": { "schema": { "type": "object", "required": ["project"], "properties": { "project": { "$ref": "#/components/schemas/Project" } } } } } },
+          "404": { "description": "Projet inconnu", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "summary": "Lire le profil",
+        "operationId": "getProfile",
+        "responses": {
+          "200": { "description": "Profil public", "content": { "application/json": { "schema": { "type": "object", "required": ["profile"], "properties": { "profile": { "$ref": "#/components/schemas/Profile" } } } } } }
+        }
+      }
+    },
+    "/api/contact": {
+      "post": {
+        "summary": "Envoyer un message",
+        "description": "Le backend valide la demande et la transmet à Formspree. Une configuration Formspree est nécessaire pour l'envoi réel.",
+        "operationId": "sendContact",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContactRequest" } } } },
+        "responses": {
+          "202": { "description": "Message accepté", "content": { "application/json": { "schema": { "type": "object", "required": ["status"], "properties": { "status": { "type": "string", "enum": ["accepted"] } } } } } },
+          "400": { "description": "Entrée invalide ou JSON malformé", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "413": { "description": "Corps JSON trop volumineux", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "429": { "description": "Limite d'envoi atteinte", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "503": { "description": "Contact indisponible", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Project": {
+        "type": "object",
+        "required": ["slug", "title", "description", "publishDate", "tags", "imagePath", "imageAlt", "pagePath"],
+        "properties": {
+          "slug": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "publishDate": { "type": "string", "format": "date" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "imagePath": { "type": "string", "description": "Chemin d'image relatif au frontend" },
+          "imageAlt": { "type": "string" },
+          "pagePath": { "type": "string", "description": "Chemin de la page statique sur le frontend" },
+          "demoUrl": { "type": "string", "format": "uri" }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "required": ["name", "role", "location", "technologies"],
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string" },
+          "location": { "type": "string" },
+          "technologies": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "ContactRequest": {
+        "type": "object",
+        "required": ["name", "email", "message"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+          "email": { "type": "string", "format": "email", "maxLength": 254 },
+          "message": { "type": "string", "minLength": 10, "maxLength": 3000 },
+          "website": { "type": "string", "maxLength": 200, "description": "Champ piège à laisser vide" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "object", "required": ["code", "message"], "properties": { "code": { "type": "string" }, "message": { "type": "string" } } }
+        }
+      }
+    }
+  }
+}
