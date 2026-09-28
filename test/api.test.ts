@@ -8,10 +8,16 @@ import { createApp } from "../src/index.js";
 test("the catalog and detail routes expose the existing projects", async () => {
   const app = createApp();
   const list = await request(app).get("/api/projects").expect(200);
-  assert.equal(list.body.projects.length, 5);
-  assert.equal(list.body.projects[0].title, "Projet WordPress mon site");
+  assert.equal(list.body.projects.length, 10);
+  assert.equal(list.body.projects[0].title, "MamiPet — application de garde d'animaux");
   assert.deepEqual(list.body.projects.map((project: { publishDate: string }) => project.publishDate),
     [...list.body.projects.map((project: { publishDate: string }) => project.publishDate)].sort().reverse());
+
+  for (const slug of ["mami-pet-app", "mami-pet-landing", "traiteur-caen-normandie", "creation-site-normandie", "pedago-up"]) {
+    const detail = await request(app).get(`/api/projects/${slug}`).expect(200);
+    assert.equal(detail.body.project.pagePath, `/work/${slug}/`);
+    assert.ok(detail.body.project.demoUrl.startsWith("https://"));
+  }
 
   const nested = await request(app).get("/api/projects/nested%2Fduvet-genius").expect(200);
   assert.equal(nested.body.project.pagePath, "/work/nested/duvet-genius/");
